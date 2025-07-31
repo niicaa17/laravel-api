@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 
+
 class UserController extends Controller
 {
     public function index()
@@ -82,27 +83,28 @@ class UserController extends Controller
     {
         return $request->user();
     }
-    public function uploadFoto(Request $request)
+    public function updateProfile(Request $request)
     {
-        $user = Auth::user();
-        if ($request->hasFile('foto')) {
-            $file = $request->file('foto');
-            $path = $file->store('public/foto');
-            $user->foto = basename($path);
-
-            $user->save();
-        }
-        return $user;
-    }
-
-    public function updatePassword(Request $request)
-    {
-        $user = Auth::user();
         $request->validate([
-            'password' => 'required|min:6|confirmed',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
         ]);
-        $user->password = Hash::make($request->password);
+        $user = $request->user();
+        $user->update($request->only('name', 'email'));
+        return response()->json(['message' => 'Profil berhasil diperbarui']);
+    }
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:6|confirmed'
+        ]);
+        $user = $request->user();
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['error' => 'Password saat ini salah'], 422);
+        }
+        $user->password = Hash::make($request->new_password);
         $user->save();
-        return response()->json(['message' => 'Password updated']);
+        return response()->json(['message' => 'Password berhasil diperbarui']);
     }
 }
